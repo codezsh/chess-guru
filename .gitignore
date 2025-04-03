@@ -1,0 +1,4 @@
+# unnecessary files
+*.pyd
+*.pyc
+myenv/**
