@@ -1,0 +1,17 @@
+**Business-Friendly Open Source License (BFL) v1.0**
+
+**1. Open-Source Usage**  
+This software is free to use, modify, and distribute for non-commercial and open-source projects under the terms of this license.
+
+**2. Commercial Usage & Monetization**  
+If you use this software to generate revenue, or as part of a paid service, product, or business, you must obtain a commercial license from the original author.
+
+**3. Attribution**  
+You must give credit to the original author in all copies, modified versions, and derivatives of this software.
+
+**4. No Warranty**  
+This software is provided "as is," without any warranties or guarantees.
+
+**5. Contact for Commercial License**  
+To purchase a commercial license, contact: [celestialrub@gmail.com]
+
