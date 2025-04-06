@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton, QTextEdit
 from PyQt6.QtGui import QFont
-from ui.board import ChessBoard
+from ui.board import Board
 from core.statehandler import state_manager
 
 class MainWindow(QMainWindow):
@@ -14,11 +14,10 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        chessboard = ChessBoard(state_manager.board)
         infobox = QWidget()
 
         hlayout = QHBoxLayout()
-        hlayout.addWidget(chessboard)
+        hlayout.addWidget(Board(state_manager.board))
         hlayout.addWidget(infobox)
 
         heading = QLabel("Discussion panel")

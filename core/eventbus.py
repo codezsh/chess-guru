@@ -1,4 +1,5 @@
 class EventBus:
+    """for decoupling the UI and logic"""
     def __init__(self):
         self._events = {}
 
@@ -20,5 +21,4 @@ class EventBus:
             for callback in self._events[event_name]:
                 callback(*args, **kwargs)
 
-# main event bus
 AppBus = EventBus()

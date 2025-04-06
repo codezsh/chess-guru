@@ -1,20 +1,30 @@
 from PyQt6.QtWidgets import QWidget, QFrame, QGridLayout
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtCore import Qt, QMimeData
-from PyQt6.QtGui import QDrag, QPixmap, QPainter
+from PyQt6.QtGui import QDrag, QPixmap, QPainter, QColor
+from core.eventbus import AppBus
 
-
-class DraggableWidget(QWidget):
+class Piece(QWidget):
     def __init__(self, svg_file, row, col, parent=None):
         super().__init__(parent)
         self.setFixedSize(55, 55)
         self.row, self.col = row, col
         self.svg_file = svg_file
         self.svg_renderer = QSvgRenderer(f"pieces/{svg_file}")
+        self.setMouseTracking(True)
+
+        self.hovered = False
+        self.active = False
 
     def paintEvent(self, event):
         """ Render the SVG inside the widget """
         painter = QPainter(self)
+        if self.hovered:
+            painter.fillRect(self.rect(), QColor(255, 255, 0, 80))
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        if self.active:
+            painter.fillRect(self.rect(), QColor(0, 255, 0, 80))
         self.svg_renderer.render(painter)
 
     def get_drag_pixmap(self):
@@ -28,6 +38,8 @@ class DraggableWidget(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            self.active = self.active
+            self.update()
             drag = QDrag(self)
             mime_data = QMimeData()
             mime_data.setText(f"{self.row},{self.col},{self.svg_file}")
@@ -38,8 +50,17 @@ class DraggableWidget(QWidget):
 
             drag.exec(Qt.DropAction.MoveAction)
 
+    def enterEvent(self, event):
+        self.hovered = True
+        self.update()
+        return super().enterEvent(event)
 
-class DroppableSquare(QFrame):
+    def leaveEvent(self, event):
+        self.hovered = False
+        self.update()
+        return super().leaveEvent(event)
+
+class Square(QFrame):
     def __init__(self, parent, row, col):
         super().__init__(parent)
         self.row, self.col = row, col
@@ -53,7 +74,7 @@ class DroppableSquare(QFrame):
             self.setStyleSheet("background-color: #EEEED2;")  # Light square
         else:
             self.setStyleSheet("background-color: #769656;")  # Dark square
-
+        
     def set_piece(self, piece):
         if self.piece:
             self.piece.deleteLater()
@@ -78,13 +99,19 @@ class DroppableSquare(QFrame):
         source_square = self.parent().squares[start_row][start_col]
         source_square.clear_piece()
 
-        new_piece = DraggableWidget(svg_file, self.row, self.col, self)
+        new_piece = Piece(svg_file, self.row, self.col, self)
         self.set_piece(new_piece)
+
+        AppBus.emit_with_arg("piece_moved", {
+            "from": (start_row, start_col),
+            "to": (self.row, self.col),
+            "piece": svg_file
+        })
+
         event.acceptProposedAction()
 
 
-class ChessBoard(QWidget):
-    """ Manages the chessboard layout and piece placement """
+class Board(QWidget):
     def __init__(self, state):
         super().__init__()
         self.board = state
@@ -100,17 +127,18 @@ class ChessBoard(QWidget):
     def load_board(self):
         for row in range(8):
             for col in range(8):
-                square = DroppableSquare(self, row, col)
+                square = Square(self, row, col)
 
                 piece_symbol = self.board[row * 8 + col]
                 if piece_symbol != ".":
-                    piece = DraggableWidget(self.get_svg_name(piece_symbol), row, col, square)
+                    piece = Piece(Board.get_svg_name(piece_symbol), row, col, square)
                     square.set_piece(piece)
 
                 self.layout.addWidget(square, row, col)
                 self.squares[row][col] = square
 
-    def get_svg_name(self, piece):
+    @staticmethod
+    def get_svg_name(piece):
         piece_map = {
             "P": "wP.svg", "N": "wN.svg", "B": "wB.svg", "R": "wR.svg", "Q": "wQ.svg", "K": "wK.svg",
             "p": "bP.svg", "n": "bN.svg", "b": "bB.svg", "r": "bR.svg", "q": "bQ.svg", "k": "bK.svg"
