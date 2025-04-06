@@ -18,8 +18,8 @@ class MainWindow(QMainWindow):
         infobox = QWidget()
 
         hlayout = QHBoxLayout()
-        hlayout.addWidget(chessboard, 6)
-        hlayout.addWidget(infobox, 2)
+        hlayout.addWidget(chessboard)
+        hlayout.addWidget(infobox)
 
         heading = QLabel("Discussion panel")
         heading.setFont(QFont("Arial", 12))

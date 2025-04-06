@@ -88,11 +88,11 @@ class ChessBoard(QWidget):
     def __init__(self, state):
         super().__init__()
         self.board = state
-        self.setFixedSize(520, 520)
+        self.setFixedSize(560, 560)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         self.layout.setSpacing(0)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(20, 20, 20, 20)
 
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
