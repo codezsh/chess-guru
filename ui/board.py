@@ -2,7 +2,8 @@ from PyQt6.QtWidgets import QWidget, QFrame, QGridLayout
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag, QPixmap, QPainter, QColor
-from core.eventbus import AppBus
+from core.eventbus import Appbus
+from core.legalmoves import ValidMoveGenerator
 
 class Piece(QWidget):
     def __init__(self, svg_file, row, col, parent=None):
@@ -115,11 +116,15 @@ class Square(QFrame):
         new_piece = Piece(svg_file, self.row, self.col, self)
         self.set_piece(new_piece)
 
-        AppBus.emit_with_arg("piece_moved", {
+        Appbus.emit_with_arg("piece_moved", {
             "from": (start_row, start_col),
             "to": (self.row, self.col),
             "piece": svg_file
         })
+
+        validmoves = ValidMoveGenerator()
+
+
 
         event.acceptProposedAction()
 
@@ -146,7 +151,7 @@ class Board(QWidget):
         self.layout.setContentsMargins(20, 20, 20, 20)
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
-        # self.highlight_squares([(5,4),(4,4), (6,4)])
+        self.highlight_squares([(5,4),(4,4), (6,4)])
 
     def load_board(self):
         for row in range(8):
