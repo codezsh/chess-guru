@@ -17,18 +17,29 @@ class Piece(QWidget):
         self.active = False
 
     def paintEvent(self, event):
-        """ Render the SVG inside the widget """
         painter = QPainter(self)
+
         if self.hovered:
             painter.fillRect(self.rect(), QColor(255, 255, 0, 80))
             self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         if self.active:
             painter.fillRect(self.rect(), QColor(0, 255, 0, 80))
+
         self.svg_renderer.render(painter)
 
+        parent = self.parent()
+        if isinstance(parent, QFrame) and getattr(parent, "show_dot", False):
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setBrush(QColor(0, 153, 0, 130))  # dark gray with transparency
+            painter.setPen(Qt.PenStyle.NoPen)
+
+            center = self.rect().center()
+            radius = 8
+            painter.drawEllipse(center, radius, radius)
+
+
     def get_drag_pixmap(self):
-        """ Convert SVG to QPixmap for drag image """
         pixmap = QPixmap(self.size())
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
@@ -66,8 +77,10 @@ class Square(QFrame):
         self.row, self.col = row, col
         self.setAcceptDrops(True)
         self.piece = None
+        self.show_dot = False
         self.setFixedSize(65, 65)
         self.update_background()
+        
 
     def update_background(self):
         if (self.row + self.col) % 2 == 0:
@@ -110,6 +123,17 @@ class Square(QFrame):
 
         event.acceptProposedAction()
 
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.show_dot and not self.piece:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setBrush(QColor(30, 30, 30, 150))  # Dark translucent dot
+            painter.setPen(Qt.PenStyle.NoPen)
+            radius = 10
+            center = self.rect().center()
+            painter.drawEllipse(center, radius, radius)
+
 
 class Board(QWidget):
     def __init__(self, state):
@@ -120,9 +144,9 @@ class Board(QWidget):
         self.setLayout(self.layout)
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(20, 20, 20, 20)
-
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
+        # self.highlight_squares([(5,4),(4,4), (6,4)])
 
     def load_board(self):
         for row in range(8):
@@ -144,3 +168,12 @@ class Board(QWidget):
             "p": "bP.svg", "n": "bN.svg", "b": "bB.svg", "r": "bR.svg", "q": "bQ.svg", "k": "bK.svg"
         }
         return piece_map.get(piece, "")
+
+    def highlight_squares(self, positions):
+        for r in range(8):
+            for c in range(8):
+                self.squares[r][c].show_dot = False
+
+        for row, col in positions:
+            self.squares[row][col].show_dot = True
+            self.squares[row][col].update()
