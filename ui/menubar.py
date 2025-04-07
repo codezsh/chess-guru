@@ -1,0 +1,2 @@
+class MenuBar:
+    pass
