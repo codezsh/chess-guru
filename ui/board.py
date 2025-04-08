@@ -2,7 +2,8 @@ from PyQt6.QtWidgets import QWidget, QFrame, QGridLayout
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag, QPixmap, QPainter, QColor
-from core.eventbus import AppBus
+from core.eventbus import Appbus
+from core.legalmoves import ValidMoveGenerator
 
 class Piece(QWidget):
     def __init__(self, svg_file, row, col, parent=None):
@@ -17,18 +18,31 @@ class Piece(QWidget):
         self.active = False
 
     def paintEvent(self, event):
-        """ Render the SVG inside the widget """
         painter = QPainter(self)
-        if self.hovered:
+
+        parent = self.parent()
+        if self.hovered and not (isinstance(parent, QFrame) and parent.styleSheet().startswith("background-color: #7faec7")):
             painter.fillRect(self.rect(), QColor(255, 255, 0, 80))
             self.setCursor(Qt.CursorShape.PointingHandCursor)
 
+
         if self.active:
             painter.fillRect(self.rect(), QColor(0, 255, 0, 80))
+
         self.svg_renderer.render(painter)
 
+        parent = self.parent()
+        if isinstance(parent, QFrame) and getattr(parent, "show_dot", False):
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setBrush(QColor(0, 153, 0, 130))
+            painter.setPen(Qt.PenStyle.NoPen)
+
+            center = self.rect().center()
+            radius = 8
+            painter.drawEllipse(center, radius, radius)
+
+
     def get_drag_pixmap(self):
-        """ Convert SVG to QPixmap for drag image """
         pixmap = QPixmap(self.size())
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
@@ -38,6 +52,8 @@ class Piece(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            Appbus.emit("highlight_piece", (self.row, self.col))
+
             self.active = self.active
             self.update()
             drag = QDrag(self)
@@ -66,8 +82,10 @@ class Square(QFrame):
         self.row, self.col = row, col
         self.setAcceptDrops(True)
         self.piece = None
+        self.show_dot = False
         self.setFixedSize(65, 65)
         self.update_background()
+        
 
     def update_background(self):
         if (self.row + self.col) % 2 == 0:
@@ -102,31 +120,104 @@ class Square(QFrame):
         new_piece = Piece(svg_file, self.row, self.col, self)
         self.set_piece(new_piece)
 
-        AppBus.emit_with_arg("piece_moved", {
+        Appbus.emit("piece_moved", {
             "from": (start_row, start_col),
             "to": (self.row, self.col),
             "piece": svg_file
         })
 
+        validmoves = ValidMoveGenerator()
+        parent = self.parent()
+        if parent.highlighted_square:
+            r, c = parent.highlighted_square
+            parent.squares[r][c].set_highlight(False)
+            parent.highlighted_square = None
+
+
         event.acceptProposedAction()
 
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+
+        painter = QPainter(self)
+        if self.show_dot and not self.piece:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setBrush(QColor(30, 30, 30, 150))  # Dark translucent dot
+            painter.setPen(Qt.PenStyle.NoPen)
+            radius = 10
+            center = self.rect().center()
+            painter.drawEllipse(center, radius, radius)
+        
+        painter.setPen(QColor(70, 70, 70))  # Dark text
+        font = painter.font()
+        font.setPointSize(8)
+        painter.setFont(font)
+
+
+        if (not self.parent().flipped and self.row == 7) or (self.parent().flipped and self.row == 0):
+            file_char = chr(ord('a') + self.col)
+            painter.drawText(self.rect().adjusted(48, 48, -4, -4), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, file_char)
+
+        if (not self.parent().flipped and self.col == 0) or (self.parent().flipped and self.col == 7):
+            rank_char = str(8 - self.row if not self.parent().flipped else self.row + 1)
+            painter.drawText(self.rect().adjusted(4, 48, -48, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom, rank_char)
+        
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            if not self.piece:
+                board = self.parent()
+                if board.highlighted_square:
+                    r, c = board.highlighted_square
+                    board.squares[r][c].set_highlight(False)
+                    board.highlighted_square = None
+            else:
+                Appbus.emit("highlight_piece", (self.row, self.col))
+        return super().mousePressEvent(event)
+
+
+    def set_highlight(self, on=True):
+        if on:
+            self.setStyleSheet("background-color: #7faec7;")  # golden square
+        else:
+            self.update_background()
 
 class Board(QWidget):
     def __init__(self, state):
         super().__init__()
         self.board = state
+        self.flipped = False
+
+
         self.setFixedSize(560, 560)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(20, 20, 20, 20)
-
+        
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
+        self.highlighted_square = None
+
+        # use -> self.highlight_squares([(5,4),(4,4), (6,4)])
+
+        
+        Appbus.on("flip_board", self.flip_board)
+        Appbus.on("highlight_piece", self.highlight_square)
+
 
     def load_board(self):
-        for row in range(8):
-            for col in range(8):
+        for i in reversed(range(self.layout.count())):
+            widget = self.layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+
+        for r in range(8):
+            for c in range(8):
+                row = 7 - r if self.flipped else r
+                col = 7 - c if self.flipped else c
+
                 square = Square(self, row, col)
 
                 piece_symbol = self.board[row * 8 + col]
@@ -134,7 +225,7 @@ class Board(QWidget):
                     piece = Piece(Board.get_svg_name(piece_symbol), row, col, square)
                     square.set_piece(piece)
 
-                self.layout.addWidget(square, row, col)
+                self.layout.addWidget(square, r, c)
                 self.squares[row][col] = square
 
     @staticmethod
@@ -144,3 +235,25 @@ class Board(QWidget):
             "p": "bP.svg", "n": "bN.svg", "b": "bB.svg", "r": "bR.svg", "q": "bQ.svg", "k": "bK.svg"
         }
         return piece_map.get(piece, "")
+
+    def highlight_squares(self, positions):
+        for r in range(8):
+            for c in range(8):
+                self.squares[r][c].show_dot = False
+
+        for row, col in positions:
+            self.squares[row][col].show_dot = True
+            self.squares[row][col].update()
+
+    def flip_board(self):
+        self.flipped = not self.flipped
+        self.load_board()
+    
+    def highlight_square(self, pos):
+        if self.highlighted_square:
+            r, c = self.highlighted_square
+            self.squares[r][c].set_highlight(False)
+
+        r, c = pos
+        self.highlighted_square = (r, c)
+        self.squares[r][c].set_highlight(True)

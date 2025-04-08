@@ -1,13 +1,25 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton, QTextEdit
+from PyQt6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QPushButton,
+    QTextEdit,
+)
 from PyQt6.QtGui import QFont
 from ui.board import Board
 from core.statehandler import state_manager
+from ui.menubar import MenuBar
+from ui.movepanel import MoveHistory
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Chess Guru")
         self.setGeometry(100, 100, 800, 600)
+        self.setMenuBar(MenuBar(self))
         self.uiLayout()
 
     def uiLayout(self):
@@ -17,11 +29,19 @@ class MainWindow(QMainWindow):
         infobox = QWidget()
 
         hlayout = QHBoxLayout()
+
+        move_widget = MoveHistory()
+        # use -> move_widget.add_move(1, "e4", "e5")
+
+        hlayout.addWidget(move_widget)
         hlayout.addWidget(Board(state_manager.board))
         hlayout.addWidget(infobox)
 
-        heading = QLabel("Discussion panel")
-        heading.setFont(QFont("Arial", 12))
+        heading = QLabel("DISCUSSION PANEL")
+        font = QFont("Arial", 11)
+        font.setBold(True)
+        heading.setFont(font)
+
 
         analysis = QWidget()
         analysis.setLayout(QVBoxLayout())
@@ -34,10 +54,10 @@ class MainWindow(QMainWindow):
         textbox.setPlaceholderText("Enter your message")
         textbox.setFont(QFont("Arial", 12))
         textbox.setStyleSheet("padding: 10px;")
-        textbox.setFixedHeight(60)  # Set a reasonable height
+        textbox.setFixedHeight(60)
 
         button = QPushButton("send")
-        button.setFixedHeight(60)  # Match the height of the textbox
+        button.setFixedHeight(60)
 
         chatinput.layout().addWidget(textbox)
         chatinput.layout().addWidget(button)
@@ -51,7 +71,6 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(hlayout)
 
 
-# Run Application
 if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
 
