@@ -17,15 +17,22 @@ class StateHandler:
         ]
 
         self.turn = "w"
+        self.activepiece = None
         Appbus.on("piece_moved", self.handle_piece_move)
         Appbus.on("get_board", lambda : self.board)
         Appbus.on("print_board", self.print_board)
+        Appbus.on("get_turn", lambda : self.turn)
+        Appbus.on("set_active_piece", self.register_active_piece)
+        Appbus.on("get_active_piece", lambda : self.activepiece)
     
     def get_piece_at(self, row, col):
         return self.board[row * 8 + col]
 
     def set_piece_at(self, row, col, symbol):
         self.board[row * 8 + col] = symbol
+    
+    def register_active_piece(self, row, col):
+        self.activepiece = (row, col)
 
     def move_piece(self, start_row, start_col, end_row, end_col):
         piece = self.get_piece_at(start_row, start_col)

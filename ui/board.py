@@ -25,22 +25,17 @@ class Piece(QWidget):
             painter.fillRect(self.rect(), QColor(255, 255, 0, 80))
             self.setCursor(Qt.CursorShape.PointingHandCursor)
 
-
         if self.active:
             painter.fillRect(self.rect(), QColor(0, 255, 0, 80))
 
         self.svg_renderer.render(painter)
 
-        parent = self.parent()
         if isinstance(parent, QFrame) and getattr(parent, "show_dot", False):
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setBrush(QColor(0, 153, 0, 130))
             painter.setPen(Qt.PenStyle.NoPen)
-
             center = self.rect().center()
-            radius = 8
-            painter.drawEllipse(center, radius, radius)
-
+            painter.drawEllipse(center, 8, 8)
 
     def get_drag_pixmap(self):
         pixmap = QPixmap(self.size())
@@ -51,20 +46,43 @@ class Piece(QWidget):
         return pixmap
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            Appbus.emit("highlight_piece", (self.row, self.col))
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
 
-            self.active = self.active
+        current_turn = Appbus.emit_with_return("get_turn")[0]
+        piece_color = self.svg_file[0].lower()
+
+        if piece_color != current_turn:
+            return
+
+        Appbus.emit("set_active_piece", self.row, self.col)
+        self.active = True
+        self.update()
+
+        drag = QDrag(self)
+        mime_data = QMimeData()
+        mime_data.setText(f"{self.row},{self.col},{self.svg_file}")
+        drag.setPixmap(self.get_drag_pixmap())
+        drag.setHotSpot(event.position().toPoint())
+        drag.setMimeData(mime_data)
+        drag.exec(Qt.DropAction.MoveAction)
+
+        new_pos = Appbus.emit_with_return("get_active_piece")[0]
+
+        if new_pos == (self.row, self.col) or (not new_pos or len(new_pos) != 2):
+            self.active = False
             self.update()
-            drag = QDrag(self)
-            mime_data = QMimeData()
-            mime_data.setText(f"{self.row},{self.col},{self.svg_file}")
+            return
 
-            drag.setPixmap(self.get_drag_pixmap())
-            drag.setHotSpot(event.position().toPoint())
-            drag.setMimeData(mime_data)
+        # Emit piece_moved event
+        Appbus.emit("piece_moved", {
+            "from": (self.row, self.col),
+            "to": new_pos,
+            "piece": self.svg_file
+        })
 
-            drag.exec(Qt.DropAction.MoveAction)
+        self.active = False
+        self.update()
 
     def enterEvent(self, event):
         self.hovered = True
@@ -114,6 +132,10 @@ class Square(QFrame):
         data = event.mimeData().text().split(",")
         start_row, start_col, svg_file = int(data[0]), int(data[1]), data[2]
 
+        if (start_row, start_col) == (self.row, self.col):
+            event.ignore()
+            return
+
         source_square = self.parent().squares[start_row][start_col]
         source_square.clear_piece()
 
@@ -126,13 +148,13 @@ class Square(QFrame):
             "piece": svg_file
         })
 
+        # Clear previous highlight
         validmoves = ValidMoveGenerator()
         parent = self.parent()
         if parent.highlighted_square:
             r, c = parent.highlighted_square
             parent.squares[r][c].set_highlight(False)
             parent.highlighted_square = None
-
 
         event.acceptProposedAction()
 
@@ -200,7 +222,7 @@ class Board(QWidget):
         self.load_board()
         self.highlighted_square = None
 
-        # use -> self.highlight_squares([(5,4),(4,4), (6,4)])
+        self.highlight_squares([(5,4),(4,4), (6,4)])
 
         
         Appbus.on("flip_board", self.flip_board)
