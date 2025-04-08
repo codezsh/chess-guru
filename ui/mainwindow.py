@@ -2,13 +2,16 @@ from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QLabel, QVBoxLayo
 from PyQt6.QtGui import QFont
 from ui.board import Board
 from core.statehandler import state_manager
+from ui.menubar import MenuBar
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Chess Guru")
         self.setGeometry(100, 100, 800, 600)
+        self.setMenuBar(MenuBar(self))
         self.uiLayout()
+        
 
     def uiLayout(self):
         central_widget = QWidget()
@@ -51,7 +54,6 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(hlayout)
 
 
-# Run Application
 if __name__ == "__main__":
     from PyQt6.QtWidgets import QApplication
 

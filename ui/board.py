@@ -123,39 +123,67 @@ class Square(QFrame):
         })
 
         validmoves = ValidMoveGenerator()
-
-
-
         event.acceptProposedAction()
 
     def paintEvent(self, event):
         super().paintEvent(event)
+
+        painter = QPainter(self)
         if self.show_dot and not self.piece:
-            painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setBrush(QColor(30, 30, 30, 150))  # Dark translucent dot
             painter.setPen(Qt.PenStyle.NoPen)
             radius = 10
             center = self.rect().center()
             painter.drawEllipse(center, radius, radius)
+        
+        painter.setPen(QColor(70, 70, 70))  # Dark text
+        font = painter.font()
+        font.setPointSize(8)
+        painter.setFont(font)
+
+
+        if (not self.parent().flipped and self.row == 7) or (self.parent().flipped and self.row == 0):
+            file_char = chr(ord('a') + self.col)
+            painter.drawText(self.rect().adjusted(48, 48, -4, -4), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, file_char)
+
+        if (not self.parent().flipped and self.col == 0) or (self.parent().flipped and self.col == 7):
+            rank_char = str(8 - self.row if not self.parent().flipped else self.row + 1)
+            painter.drawText(self.rect().adjusted(4, 48, -48, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom, rank_char)
+
 
 
 class Board(QWidget):
     def __init__(self, state):
         super().__init__()
         self.board = state
+        self.flipped = False
+
+
         self.setFixedSize(560, 560)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(20, 20, 20, 20)
+        
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
         self.highlight_squares([(5,4),(4,4), (6,4)])
 
+        
+        Appbus.on("flip_board", self.flip_board)
+
     def load_board(self):
-        for row in range(8):
-            for col in range(8):
+        for i in reversed(range(self.layout.count())):
+            widget = self.layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+
+        for r in range(8):
+            for c in range(8):
+                row = 7 - r if self.flipped else r
+                col = 7 - c if self.flipped else c
+
                 square = Square(self, row, col)
 
                 piece_symbol = self.board[row * 8 + col]
@@ -163,7 +191,7 @@ class Board(QWidget):
                     piece = Piece(Board.get_svg_name(piece_symbol), row, col, square)
                     square.set_piece(piece)
 
-                self.layout.addWidget(square, row, col)
+                self.layout.addWidget(square, r, c)
                 self.squares[row][col] = square
 
     @staticmethod
@@ -182,3 +210,7 @@ class Board(QWidget):
         for row, col in positions:
             self.squares[row][col].show_dot = True
             self.squares[row][col].update()
+
+    def flip_board(self):
+        self.flipped = not self.flipped
+        self.load_board()
