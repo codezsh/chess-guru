@@ -20,9 +20,11 @@ class Piece(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
 
-        if self.hovered:
+        parent = self.parent()
+        if self.hovered and not (isinstance(parent, QFrame) and parent.styleSheet().startswith("background-color: #7faec7")):
             painter.fillRect(self.rect(), QColor(255, 255, 0, 80))
             self.setCursor(Qt.CursorShape.PointingHandCursor)
+
 
         if self.active:
             painter.fillRect(self.rect(), QColor(0, 255, 0, 80))
@@ -32,7 +34,7 @@ class Piece(QWidget):
         parent = self.parent()
         if isinstance(parent, QFrame) and getattr(parent, "show_dot", False):
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            painter.setBrush(QColor(0, 153, 0, 130))  # dark gray with transparency
+            painter.setBrush(QColor(0, 153, 0, 130))
             painter.setPen(Qt.PenStyle.NoPen)
 
             center = self.rect().center()
@@ -50,6 +52,8 @@ class Piece(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            Appbus.emit("highlight_piece", (self.row, self.col))
+
             self.active = self.active
             self.update()
             drag = QDrag(self)
@@ -116,14 +120,22 @@ class Square(QFrame):
         new_piece = Piece(svg_file, self.row, self.col, self)
         self.set_piece(new_piece)
 
-        Appbus.emit_with_arg("piece_moved", {
+        Appbus.emit("piece_moved", {
             "from": (start_row, start_col),
             "to": (self.row, self.col),
             "piece": svg_file
         })
 
         validmoves = ValidMoveGenerator()
+        parent = self.parent()
+        if parent.highlighted_square:
+            r, c = parent.highlighted_square
+            parent.squares[r][c].set_highlight(False)
+            parent.highlighted_square = None
+
+
         event.acceptProposedAction()
+
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -150,8 +162,26 @@ class Square(QFrame):
         if (not self.parent().flipped and self.col == 0) or (self.parent().flipped and self.col == 7):
             rank_char = str(8 - self.row if not self.parent().flipped else self.row + 1)
             painter.drawText(self.rect().adjusted(4, 48, -48, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom, rank_char)
+        
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            if not self.piece:
+                board = self.parent()
+                if board.highlighted_square:
+                    r, c = board.highlighted_square
+                    board.squares[r][c].set_highlight(False)
+                    board.highlighted_square = None
+            else:
+                Appbus.emit("highlight_piece", (self.row, self.col))
+        return super().mousePressEvent(event)
 
 
+    def set_highlight(self, on=True):
+        if on:
+            self.setStyleSheet("background-color: #7faec7;")  # golden square
+        else:
+            self.update_background()
 
 class Board(QWidget):
     def __init__(self, state):
@@ -168,10 +198,14 @@ class Board(QWidget):
         
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
-        self.highlight_squares([(5,4),(4,4), (6,4)])
+        self.highlighted_square = None
+
+        # use -> self.highlight_squares([(5,4),(4,4), (6,4)])
 
         
         Appbus.on("flip_board", self.flip_board)
+        Appbus.on("highlight_piece", self.highlight_square)
+
 
     def load_board(self):
         for i in reversed(range(self.layout.count())):
@@ -214,3 +248,12 @@ class Board(QWidget):
     def flip_board(self):
         self.flipped = not self.flipped
         self.load_board()
+    
+    def highlight_square(self, pos):
+        if self.highlighted_square:
+            r, c = self.highlighted_square
+            self.squares[r][c].set_highlight(False)
+
+        r, c = pos
+        self.highlighted_square = (r, c)
+        self.squares[r][c].set_highlight(True)

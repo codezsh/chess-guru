@@ -10,6 +10,7 @@ class MenuBar(QMenuBar):
         board_menu = QMenu("Board", self)
         flip_action = QAction("Flip Board", self)
         
+
         flip_action.triggered.connect(lambda: Appbus.emit("flip_board"))
         board_menu.addAction(flip_action)
         
@@ -20,6 +21,7 @@ class MenuBar(QMenuBar):
         QMenu {
             padding: 6px;
             border-radius: 0px;
+            border:1px solid #4a4a4a;
         }
 
         QMenu::item {
