@@ -8,7 +8,7 @@ class MenuBar(QMenuBar):
         super().__init__(parent)
 
         board_actions = [
-            (QAction("Flip Board", self), None),
+            (QAction("Flip Board", self), lambda: Appbus.emit("flip_board")),
             (QAction("Reset Board", self), None),
             (QAction("Load Position", self), None),
             (QAction("Load game", self), None),
@@ -41,6 +41,7 @@ class MenuBar(QMenuBar):
     def load_menus(self, items):
         for menu, actions in items:
             for action, callback in actions:
-                # action.triggered.connect(callback)
+                if callback:
+                    action.triggered.connect(callback)
                 menu.addAction(action)
             self.addMenu(menu)
