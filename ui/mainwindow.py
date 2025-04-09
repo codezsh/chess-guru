@@ -33,9 +33,10 @@ class MainWindow(QMainWindow):
         move_widget = MoveHistory()
         move_widget.add_move(1, "e4", "e5")
 
-        hlayout.addWidget(move_widget)
-        hlayout.addWidget(Board(state_manager.board))
         hlayout.addWidget(infobox)
+        hlayout.addWidget(Board(state_manager.board))
+        hlayout.addWidget(move_widget)
+
 
         heading = QLabel("DISCUSSION PANEL")
         font = QFont("Arial", 11)
