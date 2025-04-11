@@ -25,7 +25,13 @@ class MenuBar(QMenuBar):
             (QAction("Patterns", self), None),
         ]
 
-        menus = [(QMenu("Board", self), board_actions), (QMenu("Analysis", self), analysis_actions), (QMenu("Learn", self), learn_actions)]
+        help_actions = [
+            (QAction("About", self), None),
+            (QAction("Shortcuts", self), None),
+            (QAction("Report a bug", self), None),
+            (QAction("Suggest a feature", self), None),
+        ]
+        menus = [(QMenu("Board", self), board_actions), (QMenu("Analysis", self), analysis_actions), (QMenu("Learn", self), learn_actions), (QMenu("Help", self), help_actions)]
 
         self.load_menus(menus)
         self.setStyleSheet(
