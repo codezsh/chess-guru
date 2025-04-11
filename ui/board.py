@@ -22,7 +22,6 @@ class Board(QWidget):
 
         self.highlighted_square = None
         self.valid_targets = set()
-        self.highlight_squares([(5,4),(4,4), (6,4)])
 
         
         Appbus.on("flip_board", self.flip_board)
