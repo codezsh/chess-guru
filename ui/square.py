@@ -106,7 +106,7 @@ class Square(QFrame):
                 board = self.parent()
                 if board.highlighted_square:
                     r, c = board.highlighted_square
-                    board.squares[r][c].set_highlight(False)
+                    board.squares[r][c].set_highlight()
                     board.highlighted_square = None
             else:
                 Appbus.emit("highlight_piece", (self.row, self.col))
