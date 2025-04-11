@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import QFrame
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPainter, QColor
 from core.eventbus import Appbus
-from core.legalmoves import ValidMoveGenerator
 from ui.piece import Piece
 
 class Square(QFrame):
@@ -47,7 +46,12 @@ class Square(QFrame):
             event.ignore()
             return
 
-        source_square = self.parent().squares[start_row][start_col]
+        parent = self.parent()
+        if (self.row, self.col) not in parent.valid_targets:
+            event.ignore()
+            return
+
+        source_square = parent.squares[start_row][start_col]
         source_square.clear_piece()
 
         new_piece = Piece(svg_file, self.row, self.col, self)
@@ -59,14 +63,13 @@ class Square(QFrame):
             "piece": svg_file
         })
 
-        # Clear previous highlight
-        validmoves = ValidMoveGenerator()
-        parent = self.parent()
+        
         if parent.highlighted_square:
             r, c = parent.highlighted_square
             parent.squares[r][c].set_highlight()
             parent.highlighted_square = None
 
+        parent.clear_highlights()
         event.acceptProposedAction()
 
 

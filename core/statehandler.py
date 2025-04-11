@@ -1,9 +1,8 @@
 from core.eventbus import Appbus
+from core.legalmoves import ValidMoveGenerator
 
 class StateHandler:
     def __init__(self):
-        # black pieces - small case
-        # white pieces - upper case
 
         self.board = [
             "r", "n", "b", "q", "k", "b", "n", "r",
@@ -33,6 +32,8 @@ class StateHandler:
     
     def register_active_piece(self, row, col):
         self.activepiece = (row, col)
+        legal_move_handler = ValidMoveGenerator()
+        Appbus.emit("hlt_legal_moves", legal_move_handler.get_moves(row, col))
 
     def move_piece(self, start_row, start_col, end_row, end_col):
         piece = self.get_piece_at(start_row, start_col)

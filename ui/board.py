@@ -19,13 +19,15 @@ class Board(QWidget):
         
         self.squares = [[None for _ in range(8)] for _ in range(8)]
         self.load_board()
-        self.highlighted_square = None
 
+        self.highlighted_square = None
+        self.valid_targets = set()
         self.highlight_squares([(5,4),(4,4), (6,4)])
 
         
         Appbus.on("flip_board", self.flip_board)
         Appbus.on("highlight_piece", self.highlight_square)
+        Appbus.on("hlt_legal_moves", self.highlight_squares)
 
 
     def load_board(self):
@@ -58,13 +60,17 @@ class Board(QWidget):
         return piece_map.get(piece, "")
 
     def highlight_squares(self, positions):
+        self.valid_targets = set(positions)
         for r in range(8):
             for c in range(8):
-                self.squares[r][c].show_dot = False
+                if self.squares[r][c].show_dot:
+                    self.squares[r][c].show_dot = False
+                    self.squares[r][c].update()
 
         for row, col in positions:
             self.squares[row][col].show_dot = True
             self.squares[row][col].update()
+
 
     def flip_board(self):
         self.flipped = not self.flipped
@@ -78,3 +84,17 @@ class Board(QWidget):
         r, c = pos
         self.highlighted_square = (r, c)
         self.squares[r][c].set_highlight()
+
+    def clear_highlights(self):
+        for r in range(8):
+            for c in range(8):
+                if self.squares[r][c].show_dot:
+                    self.squares[r][c].show_dot = False
+                    self.squares[r][c].update()
+
+        if self.highlighted_square:
+            r, c = self.highlighted_square
+            self.squares[r][c].set_highlight(False)
+            self.highlighted_square = None
+
+        self.valid_targets.clear()
