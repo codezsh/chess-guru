@@ -9,8 +9,6 @@ class Board(QWidget):
         super().__init__()
         self.board = state
         self.flipped = False
-
-
         self.setFixedSize(560, 560)
         self.layout = QGridLayout()
         self.setLayout(self.layout)
@@ -27,7 +25,7 @@ class Board(QWidget):
         Appbus.on("flip_board", self.flip_board)
         Appbus.on("highlight_piece", self.highlight_square)
         Appbus.on("hlt_legal_moves", self.highlight_squares)
-
+        Appbus.on("refresh", self.load_board)
 
     def load_board(self):
         for i in reversed(range(self.layout.count())):
@@ -43,8 +41,10 @@ class Board(QWidget):
                 square = Square(self, row, col)
 
                 piece_symbol = self.board[row * 8 + col]
-                if piece_symbol != ".":
-                    piece = Piece(Board.get_svg_name(piece_symbol), row, col, square)
+                svg_name = Board.get_svg_name(piece_symbol)
+
+                if piece_symbol != "." and svg_name:  # Ensure valid piece and svg_name
+                    piece = Piece(svg_name, row, col, square)
                     square.set_piece(piece)
 
                 self.layout.addWidget(square, r, c)
