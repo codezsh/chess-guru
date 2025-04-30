@@ -86,17 +86,15 @@ class PawnMoveGenerator(PieceMoveGenerator):
         # En passant
         enpassant_row = 3 if color == "white" else 4
         if row == enpassant_row:
-            for dc in [-1, 1]:
-                adj_col = col + dc
-                if self.in_bounds(row, adj_col):
-                    side_piece = self.get_piece(row, adj_col)
-                    if side_piece == enemy_pawn:
-                        behind = row + direction
-                        if self.is_empty(behind, adj_col):
-                            # Check if pawn just advanced (by checking starting position empty)
-                            two_behind = row - direction * 2
-                            if self.in_bounds(two_behind, adj_col) and self.get_piece(two_behind, adj_col) == ".":
-                                moves.append((row + direction, adj_col))
+            last_move = Appbus.emit_with_return("get_last_move")
+            if last_move:
+                ((start_r, start_c), (end_r, end_c)) = last_move[0]
+                last_piece = self.get_piece(end_r, end_c)
+                expected_pawn = enemy_pawn
+                if last_piece != expected_pawn:
+                    return moves
+                if abs(end_r - start_r) == 2 and end_r == row and abs(end_c - col) == 1:
+                    moves.append((row + direction, end_c))
 
         return moves
 

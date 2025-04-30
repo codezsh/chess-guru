@@ -25,6 +25,8 @@ class StateHandler:
         Appbus.on("get_turn", lambda: self.turn)
         Appbus.on("set_active_piece", self.register_active_piece)
         Appbus.on("get_active_piece", lambda: self.activepiece)
+        Appbus.on("get_last_move", lambda: self.last_move)
+
 
     def get_piece_at(self, row, col):
         return self.board[row * 8 + col]
