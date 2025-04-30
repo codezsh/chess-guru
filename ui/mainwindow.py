@@ -31,7 +31,6 @@ class MainWindow(QMainWindow):
         hlayout = QHBoxLayout()
 
         move_widget = MoveHistory()
-        move_widget.add_move(1, "e4", "e5")
 
         hlayout.addWidget(infobox)
         hlayout.addWidget(Board(state_manager.board))
