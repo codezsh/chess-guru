@@ -1,17 +1,16 @@
 class BoardRepresentor:
     def __init__(self):
         self.board_1d = [
-            'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r',  # Black pieces
-            'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p',  # Black pawns
-            '.', '.', '.', '.', '.', '.', '.', '.',  # Empty squares
-            '.', '.', '.', '.', '.', '.', '.', '.',  # Empty squares
-            '.', '.', '.', '.', '.', '.', '.', '.',  # Empty squares
-            '.', '.', '.', '.', '.', '.', '.', '.',  # Empty squares
-            'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P',  # White pawns
-            'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'   # White pieces
+            'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r',
+            'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p',
+            '.', '.', '.', '.', '.', '.', '.', '.',
+            '.', '.', '.', '.', '.', '.', '.', '.',
+            '.', '.', '.', '.', '.', '.', '.', '.',
+            '.', '.', '.', '.', '.', '.', '.', '.',
+            'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P',  
+            'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'   
         ]
         
-        # Initialize the bitboard representation
         self.bitboards = {
             'w_pawns': 0x000000000000FF00,  # White pawns (on ranks 2-3)
             'b_pawns': 0x00FF000000000000,  # Black pawns (on ranks 7-8)

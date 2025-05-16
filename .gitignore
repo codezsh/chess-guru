@@ -1,4 +1,4 @@
-# unnecessary files
 *.pyd
 *.pyc
 myenv/**
+.vscode/*

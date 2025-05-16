@@ -40,6 +40,7 @@ class MenuBar(QMenuBar):
             padding: 5px;
             border-radius: 0px;
             border: 1px solid rgba(0, 0, 0, 50);
+            font-size:14px;
         }  
         """
         )
