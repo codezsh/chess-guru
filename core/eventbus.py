@@ -8,16 +8,11 @@ class EventBus:
         self._events[event_name].append(callback)
 
     def emit(self, event_name, *args, **kwargs):
-        if event_name in self._events:
-            for callback in self._events[event_name]:
-                callback(*args, **kwargs)
-    
-    def emit_with_return(self, event_name, *args, **kwargs):
         results = []
         if event_name in self._events:
             for callback in self._events[event_name]:
-                result = callback(*args, **kwargs)
-                results.append(result)
+                results.append(callback(*args, **kwargs))
         return results
+
 
 Appbus = EventBus()
